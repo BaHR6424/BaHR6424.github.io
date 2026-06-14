@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Club Chat</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+}
+body {
+  font-family: 'Rubik', sans-serif;
+  background: transparent;
+}
+.chat-container {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+.chat-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  scroll-behavior: smooth;
+  padding: 8px 0 12px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.chat-scrollable::-webkit-scrollbar {
+  display: none;
+}
+.row {
+  display: flex;
+  align-items: flex-start;
+  margin: 4px 8px;
+  width: 100%;
+}
+.avatar {
+  width: 34px;
+  height: 34px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+}
+.message {
+  position: relative;
+  background: #1ea7e1;
+  border-radius: 18px;
+  padding: 6px 12px 8px 12px;
+  max-width: 100%;
+  width: auto;
+  flex: 1;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15);
+  word-wrap: break-word;
+}
+.message::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 14px;
+  width: 12px;
+  height: 12px;
+  background: #1ea7e1;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+.name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffffff;
+  margin-bottom: 2px;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.3);
+}
+.text {
+  font-size: 15px;
+  font-weight: 600;
+  color: #eaf7ff;
+  word-break: break-word;
+  white-space: pre-wrap;
+  line-height: 1.35;
+}
+.time {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  font-size: 10px;
+  color: rgba(0,0,0,0.35);
+  font-weight: 600;
+}
+.empty-chat {
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+  font-size: 14px;
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  font-weight: 400;
+}
+</style>
+</head>
+<body>
+<div class="chat-container">
+  <div class="chat-scrollable" id="chatScroll">
+    <div class="empty-chat" id="emptyPlaceholder">Сообщения пока не загружены</div>
+  </div>
+</div>
+<script>
+const scrollContainer = document.getElementById('chatScroll');
+let userScrolledUp = false;
+let scrollTimeout = null;
+function formatTimeAgo(timestampSeconds) {
+  if (!timestampSeconds) return "только что";
+  const now = Math.floor(Date.now() / 1000);
+  const diffSeconds = now - timestampSeconds;
+  if (diffSeconds < 0) return "только что";
+  const minutes = Math.floor(diffSeconds / 60);
+  const hours = Math.floor(diffSeconds / 3600);
+  const days = Math.floor(diffSeconds / 86400);
+  if (days >= 1) {
+    const remainingHours = hours % 24;
+    return `${days} д. ${remainingHours} ч. назад`;
+  } else if (hours >= 1) {
+    const remainingMins = minutes % 60;
+    return `${hours} ч. ${remainingMins} мин. назад`;
+  } else if (minutes >= 1) {
+    return `${minutes} мин. назад`;
+  } else {
+    return `только что`;
+  }
+}
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function getIconUrl(iconName) {
+  if (!iconName) {
+    return "https://raw.githubusercontent.com/bahrstars/bahrstars.github.io/7078079fb0d951a18723045bb6c0d55c0ccf538c/GameFiles/Images/Icons/GameIcon4.svg";
+  }
+  const cleanName = String(iconName).replace(/\.svg$/i, '');
+  return `https://raw.githubusercontent.com/bahrstars/bahrstars.github.io/5c4d2cff072d93b418887ee2dd8376a51482acdc/GameFiles/Images/Icons/${encodeURIComponent(cleanName)}.svg`;
+}
+function scrollToBottomIfNeeded() {
+  if (userScrolledUp) return;
+  const distanceToBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight;
+  if (distanceToBottom <= 80) {
+    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+  }
+}
+function renderMessages(messagesArray) {
+  while (scrollContainer.firstChild) {
+    scrollContainer.removeChild(scrollContainer.firstChild);
+  }
+  if (!messagesArray || messagesArray.length === 0) {
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'empty-chat';
+    emptyDiv.textContent = 'Сообщения пока не загружены';
+    scrollContainer.appendChild(emptyDiv);
+    return;
+  }
+  for (let i = 0; i < messagesArray.length; i++) {
+    const msg = messagesArray[i];
+    if (!msg || typeof msg !== 'object') continue;
+    const name = msg.name || 'Аноним';
+    const text = msg.text || '';
+    const icon = msg.icon || 'GameIcon4';
+    const timestamp = msg.timestamp ? Number(msg.timestamp) : null;
+    let timeFormatted = 'только что';
+    if (timestamp && !isNaN(timestamp)) {
+      timeFormatted = formatTimeAgo(timestamp);
+    } else {
+      timeFormatted = 'недавно';
+    }
+    const safeName = escapeHtml(name);
+    const safeText = escapeHtml(text);
+    const iconUrl = getIconUrl(icon);
+    const row = document.createElement('div');
+    row.className = 'row';
+    const avatarDiv = document.createElement('div');
+    avatarDiv.className = 'avatar';
+    const img = document.createElement('img');
+    img.src = iconUrl;
+    img.onerror = function() {
+      if (this.src !== iconUrl) return;
+      this.src = "https://raw.githubusercontent.com/bahrstars/bahrstars.github.io/7078079fb0d951a18723045bb6c0d55c0ccf538c/GameFiles/Images/Icons/GameIcon4.svg";
+    };
+    avatarDiv.appendChild(img);
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message';
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'name';
+    nameDiv.textContent = safeName;
+    const textDiv = document.createElement('div');
+    textDiv.className = 'text';
+    textDiv.textContent = safeText;
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'time';
+    timeDiv.textContent = timeFormatted;
+    messageDiv.appendChild(nameDiv);
+    messageDiv.appendChild(textDiv);
+    messageDiv.appendChild(timeDiv);
+    row.appendChild(avatarDiv);
+    row.appendChild(messageDiv);
+    scrollContainer.appendChild(row);
+  }
+  if (!userScrolledUp) {
+    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+  }
+}
+scrollContainer.addEventListener('scroll', function() {
+  if (scrollTimeout) clearTimeout(scrollTimeout);
+  const isNearBottom = (scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight) <= 30;
+  if (!isNearBottom) {
+    userScrolledUp = true;
+  } else {
+    userScrolledUp = false;
+  }
+  scrollTimeout = setTimeout(() => {
+    if ((scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight) <= 30) {
+      userScrolledUp = false;
+    }
+  }, 150);
+});
+let hasSentLoaded = false;
+window.addEventListener('message', function(event) {
+  const receivedData = event.data;
+  let messagesArray = null;
+  let isValidArray = false;
+  if (Array.isArray(receivedData)) {
+    messagesArray = receivedData;
+    isValidArray = true;
+  } else if (typeof receivedData === 'string') {
+    try {
+      const parsed = JSON.parse(receivedData);
+      if (Array.isArray(parsed)) {
+        messagesArray = parsed;
+        isValidArray = true;
+      } else if (parsed && typeof parsed === 'object') {
+        if (Array.isArray(parsed.messages)) {
+          messagesArray = parsed.messages;
+          isValidArray = true;
+        } else if (Array.isArray(parsed.data)) {
+          messagesArray = parsed.data;
+          isValidArray = true;
+        }
+      }
+    } catch(e) {}
+  } else if (receivedData && typeof receivedData === 'object') {
+    if (Array.isArray(receivedData.messages)) {
+      messagesArray = receivedData.messages;
+      isValidArray = true;
+    } else if (Array.isArray(receivedData.data)) {
+      messagesArray = receivedData.data;
+      isValidArray = true;
+    }
+  }
+  if (isValidArray && messagesArray !== null) {
+    window.parent.postMessage(' loaded ', '*');
+    hasSentLoaded = true;
+    renderMessages(messagesArray);
+  }
+});
+window.addEventListener('DOMContentLoaded', function() {
+  window.parent.postMessage(' loaded ', '*');
+  hasSentLoaded = true;
+  renderMessages([]);
+});
+</script>
+</body>
+</html>

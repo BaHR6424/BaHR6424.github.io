@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Club Chat — Расширенный</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+}
+body {
+  font-family: 'Rubik', sans-serif;
+  background: transparent;
+}
+.chat-container {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+.chat-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  scroll-behavior: smooth;
+  padding: 8px 0 12px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.chat-scrollable::-webkit-scrollbar {
+  display: none;
+}
+
+/* Обычные сообщения (как в club.html) */
+.row {
+  display: flex;
+  align-items: flex-start;
+  margin: 4px 8px;
+  width: calc(100% - 16px);
+}
+.avatar {
+  width: 34px;
+  height: 34px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+}
+.message {
+  position: relative;
+  background: #1ea7e1;
+  border-radius: 18px;
+  padding: 6px 12px 8px 12px;
+  flex: 1;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15);
+  word-wrap: break-word;
+}
+.message::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 14px;
+  width: 12px;
+  height: 12px;
+  background: #1ea7e1;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+.name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffffff;
+  margin-bottom: 2px;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.3);
+}
+.text {
+  font-size: 15px;
+  font-weight: 600;
+  color: #eaf7ff;
+  word-break: break-word;
+  white-space: pre-wrap;
+  line-height: 1.35;
+}
+.time {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  font-size: 10px;
+  color: rgba(0,0,0,0.35);
+  font-weight: 600;
+}
+
+/* СИСТЕМНЫЕ СООБЩЕНИЯ (голубой / красный / серый + обычное синее) */
+.system-message {
+  width: calc(100% - 16px);
+  margin: 6px 8px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  text-align: center;
+  color: white;
+  background: #1ea7e1; /* по умолчанию синий */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.system-join {
+  background: #2e86c1;  /* голубой вход */
+}
+.system-leave {
+  background: #c0392b;  /* красный выход */
+}
+.system-rankup {
+  background: #6c6f8c;  /* серый повышение ранга */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+}
+.system-rankup span {
+  flex: 1;
+}
+.rank-icon-small {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  margin-left: 10px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 50%;
+  padding: 4px;
+}
+
+/* ПИН-СООБЩЕНИЕ (ПРОЗРАЧНЫЙ ФОН ВНУТРИ) */
+.pin-row {
+  display: flex;
+  align-items: flex-start;
+  margin: 4px 8px;
+  width: calc(100% - 16px);
+}
+.pin-avatar {
+  width: 34px;
+  height: 34px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+.pin-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pin-box {
+  position: relative;
+  background: #1ea7e1;
+  border-radius: 18px;
+  padding: 8px 12px 12px 12px;
+  flex: 1;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15);
+}
+.pin-box::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 14px;
+  width: 12px;
+  height: 12px;
+  background: #1ea7e1;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+.pin-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffffff;
+  margin-bottom: 6px;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.2);
+}
+.pin-image {
+  max-width: 100%;
+  max-height: 100px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: transparent; /* прозрачный фон */
+  display: block;
+  margin-top: 4px;
+}
+
+/* ЗАПРОС МОНЕТ + КНОПКА */
+.coin-request-row {
+  display: flex;
+  align-items: flex-start;
+  margin: 4px 8px;
+  width: calc(100% - 16px);
+}
+.coin-request-avatar {
+  width: 34px;
+  height: 34px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+.coin-request-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.coin-request-box {
+  position: relative;
+  background: #1ea7e1;
+  border-radius: 18px;
+  padding: 8px 12px 12px 12px;
+  flex: 1;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15);
+}
+.coin-request-box::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 14px;
+  width: 12px;
+  height: 12px;
+  background: #1ea7e1;
+  transform: rotate(45deg);
+}
+.coin-request-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.coin-request-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f9f3c1;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.coin-request-text span {
+  background: rgba(0,0,0,0.2);
+  padding: 2px 8px;
+  border-radius: 40px;
+  font-size: 13px;
+}
+.donate-btn {
+  background: #ffcc00;
+  border: none;
+  font-family: 'Rubik', sans-serif;
+  font-weight: bold;
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 40px;
+  color: #1e2a3a;
+  cursor: pointer;
+  transition: 0.1s linear;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.donate-btn:hover {
+  background: #ffd633;
+  transform: scale(0.97);
+}
+.empty-chat {
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+  font-size: 14px;
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  font-weight: 400;
+}
+</style>
+</head>
+<body>
+<div class="chat-container">
+  <div class="chat-scrollable" id="chatScroll">
+    <div class="empty-chat" id="emptyPlaceholder">Сообщения пока не загружены</div>
+  </div>
+</div>
+
+<script>
+const scrollContainer = document.getElementById('chatScroll');
+let userScrolledUp = false;
+let scrollTimeout = null;
+
+// === Вспомогательные функции (из club.html) ===
+function formatTimeAgo(timestampSeconds) {
+  if (!timestampSeconds) return "только что";
+  const now = Math.floor(Date.now() / 1000);
+  const diffSeconds = now - timestampSeconds;
+  if (diffSeconds < 0) return "только что";
+  const minutes = Math.floor(diffSeconds / 60);
+  const hours = Math.floor(diffSeconds / 3600);
+  const days = Math.floor(diffSeconds / 86400);
+  if (days >= 1) {
+    const remainingHours = hours % 24;
+    return `${days} д. ${remainingHours} ч. назад`;
+  } else if (hours >= 1) {
+    const remainingMins = minutes % 60;
+    return `${hours} ч. ${remainingMins} мин. назад`;
+  } else if (minutes >= 1) {
+    return `${minutes} мин. назад`;
+  } else {
+    return `только что`;
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function getIconUrl(iconName) {
+  if (!iconName) {
+    return "https://raw.githubusercontent.com/bahrstars/bahrstars.github.io/7078079fb0d951a18723045bb6c0d55c0ccf538c/GameFiles/Images/Icons/GameIcon4.svg";
+  }
+  const cleanName = String(iconName).replace(/\.svg$/i, '');
+  return `https://raw.githubusercontent.com/bahrstars/bahrstars.github.io/5c4d2cff072d93b418887ee2dd8376a51482acdc/GameFiles/Images/Icons/${encodeURIComponent(cleanName)}.svg`;
+}
+
+// === Отрисовка элементов с сохранением стиля club.html ===
+function renderMessages(messagesArray) {
+  // Очищаем контейнер
+  while (scrollContainer.firstChild) {
+    scrollContainer.removeChild(scrollContainer.firstChild);
+  }
+  
+  if (!messagesArray || messagesArray.length === 0) {
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'empty-chat';
+    emptyDiv.textContent = 'Сообщения пока не загружены';
+    scrollContainer.appendChild(emptyDiv);
+    return;
+  }
+
+  for (let i = 0; i < messagesArray.length; i++) {
+    const msg = messagesArray[i];
+    if (!msg || typeof msg !== 'object') continue;
+    
+    // 1) Системное сообщение (join/leave/rankup или просто обычное system)
+    if (msg.type === 'system') {
+      addSystemMessage(msg);
+      continue;
+    }
+    
+    // 2) Пин-сообщение (изображение на прозрачном фоне)
+    if (msg.type === 'pin') {
+      addPinMessage(msg);
+      continue;
+    }
+    
+    // 3) Запрос монет (специальный тип "coin_request")
+    if (msg.type === 'coin_request') {
+      addCoinRequestMessage(msg);
+      continue;
+    }
+    
+    // 4) Обычное текстовое сообщение (как в club.html)
+    addNormalMessage(msg);
+  }
+  
+  // Автопрокрутка, если пользователь не скроллил вверх
+  if (!userScrolledUp) {
+    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+  }
+}
+
+// --- обычное сообщение (клон club.html) ---
+function addNormalMessage(msg) {
+  const name = msg.name || 'Аноним';
+  const text = msg.text || '';
+  const icon = msg.icon || 'GameIcon4';
+  const timestamp = msg.timestamp ? Number(msg.timestamp) : null;
+  let timeFormatted = formatTimeAgo(timestamp);
+  
+  const safeName = escapeHtml(name);
+  const safeText = escapeHtml(text);
+  const iconUrl = getIconUrl(icon);
+  
+  const row = document.createElement('div');
+  row.className = 'row';
+  
+  const avatarDiv = document.createElement('div');
+  avatarDiv.className = 'avatar';
+  const img = document.createElement('img');
+  img.src = iconUrl;
+  img.onerror = function() {
+    if (this.src !== iconUrl) return;
+    this.src = "https://raw.githubusercontent.com/bahrstars/bahrstars.github.io/7078079fb0d951a18723045bb6c0d55c0ccf538c/GameFiles/Images/Icons/GameIcon4.svg";
+  };
+  avatarDiv.appendChild(img);
+  
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'message';
+  
+  const nameDiv = document.createElement('div');
+  nameDiv.className = 'name';
+  nameDiv.textContent = safeName;
+  
+  const textDiv = document.createElement('div');
+  textDiv.className = 'text';
+  textDiv.textContent = safeText;
+  
+  const timeDiv = document.createElement('div');
+  timeDiv.className = 'time';
+  timeDiv.textContent = timeFormatted;
+  
+  messageDiv.appendChild(nameDiv);
+  messageDiv.appendChild(textDiv);
+  messageDiv.appendChild(timeDiv);
+  row.appendChild(avatarDiv);
+  row.appendChild(messageDiv);
+  scrollContainer.appendChild(row);
+}
+
+// --- система: вход, выход, повышение ранга, а также обычное system c синим цветом ---
+function addSystemMessage(msg) {
+  const wrapper = document.createElement('div');
+  const eventType = msg.event; // join, leave, rankup, default
+  
+  let bgClass = '';
+  if (eventType === 'join') bgClass = 'system-join';
+  else if (eventType === 'leave') bgClass = 'system-leave';
+  else if (eventType === 'rankup') bgClass = 'system-rankup';
+  else bgClass = ''; // останется базовый синий из .system-message
+  
+  wrapper.className = `system-message ${bgClass}`;
+  
+  if (eventType === 'join') {
+    wrapper.textContent = `${msg.player || 'Игрок'} вступил в клуб`;
+  } 
+  else if (eventType === 'leave') {
+    wrapper.textContent = `${msg.player || 'Игрок'} покинул клуб`;
+  }
+  else if (eventType === 'rankup') {
+    // повышение ранга: текст + иконка справа
+    const span = document.createElement('span');
+    span.textContent = `${msg.player || 'Игрок'} повысил ранг`;
+    wrapper.appendChild(span);
+    if (msg.rankIcon) {
+      const iconImg = document.createElement('img');
+      iconImg.src = msg.rankIcon;
+      iconImg.className = 'rank-icon-small';
+      iconImg.onerror = function() { this.style.display = 'none'; };
+      wrapper.appendChild(iconImg);
+    } else {
+      // заглушка иконки
+      const fallback = document.createElement('span');
+      fallback.textContent = '🏆';
+      fallback.style.fontSize = '24px';
+      wrapper.appendChild(fallback);
+    }
+  }
+  else {
+    // любое другое системное сообщение (синее)
+    wrapper.textContent = msg.text || 'Системное уведомление';
+  }
+  
+  scrollContainer.appendChild(wrapper);
+}
+
+// --- ПИН (изображение на прозрачном фоне) ---
+function addPinMessage(msg) {
+  const row = document.createElement('div');
+  row.className = 'pin-row';
+  
+  const avatarDiv = document.createElement('div');
+  avatarDiv.className = 'pin-avatar';
+  const imgAvatar = document.createElement('img');
+  imgAvatar.src = getIconUrl(msg.icon || 'GameIcon4');
+  imgAvatar.onerror = function() { this.src = getIconUrl('GameIcon4'); };
+  avatarDiv.appendChild(imgAvatar);
+  
+  const pinBox = document.createElement('div');
+  pinBox.className = 'pin-box';
+  
+  const nameSpan = document.createElement('div');
+  nameSpan.className = 'pin-name';
+  nameSpan.textContent = escapeHtml(msg.name || 'Аноним');
+  
+  const pinImg = document.createElement('img');
+  pinImg.className = 'pin-image';
+  pinImg.src = msg.pinImage || '';
+  pinImg.alt = 'pin';
+  pinImg.onerror = function() { this.style.display = 'none'; };
+  
+  pinBox.appendChild(nameSpan);
+  pinBox.appendChild(pinImg);
+  
+  row.appendChild(avatarDiv);
+  row.appendChild(pinBox);
+  scrollContainer.appendChild(row);
+}
+
+// --- ЗАПРОС МОНЕТ с кнопкой "Подарить 10" ---
+function addCoinRequestMessage(msg) {
+  const row = document.createElement('div');
+  row.className = 'coin-request-row';
+  
+  const avatarDiv = document.createElement('div');
+  avatarDiv.className = 'coin-request-avatar';
+  const imgAvatar = document.createElement('img');
+  imgAvatar.src = getIconUrl(msg.icon || 'GameIcon4');
+  imgAvatar.onerror = function() { this.src = getIconUrl('GameIcon4'); };
+  avatarDiv.appendChild(imgAvatar);
+  
+  const requestBox = document.createElement('div');
+  requestBox.className = 'coin-request-box';
+  
+  const nameSpan = document.createElement('div');
+  nameSpan.className = 'coin-request-name';
+  nameSpan.textContent = escapeHtml(msg.name || 'Игрок');
+  
+  const textSpan = document.createElement('div');
+  textSpan.className = 'coin-request-text';
+  textSpan.innerHTML = `🎲 Запрашивает монеты <span>${msg.requestAmount || 50} 🪙</span>`;
+  
+  const button = document.createElement('button');
+  button.className = 'donate-btn';
+  button.textContent = `💰 Подарить 10`;
+  
+  // При клике отправляем событие родительскому окну (iframe -> game)
+  button.addEventListener('click', (e) => {
+    e.stopPropagation();
+    // собираем данные о даре: кому дарим, сколько, возможно id сообщения
+    const targetPlayer = msg.name || 'Аноним';
+    const donateAmount = 10;
+    const requestId = msg.requestId || Date.now();
+    
+    // отправляем сообщение обратно в родительское окно
+    const eventData = {
+      type: 'donate_coins',
+      from: 'chat_iframe',
+      targetPlayer: targetPlayer,
+      amount: donateAmount,
+      requestId: requestId,
+      originalMessageId: msg.id || null,
+      timestamp: Math.floor(Date.now() / 1000)
+    };
+    
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(eventData, '*');
+      // дополнительно можно показать уведомление (временно изменим текст кнопки)
+      const originalText = button.textContent;
+      button.textContent = '✅ Отправлено!';
+      button.disabled = true;
+      setTimeout(() => {
+        if (requestBox.contains(button)) {
+          button.textContent = originalText;
+          button.disabled = false;
+        }
+      }, 2000);
+    } else {
+      button.textContent = '❌ Ошибка';
+      setTimeout(() => {
+        if (requestBox.contains(button)) button.textContent = `💰 Подарить 10`;
+      }, 1000);
+    }
+  });
+  
+  requestBox.appendChild(nameSpan);
+  requestBox.appendChild(textSpan);
+  requestBox.appendChild(button);
+  
+  row.appendChild(avatarDiv);
+  row.appendChild(requestBox);
+  scrollContainer.appendChild(row);
+}
+
+// === Обработка скролла (как в club.html) ===
+scrollContainer.addEventListener('scroll', function() {
+  if (scrollTimeout) clearTimeout(scrollTimeout);
+  const isNearBottom = (scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight) <= 30;
+  if (!isNearBottom) {
+    userScrolledUp = true;
+  } else {
+    userScrolledUp = false;
+  }
+  scrollTimeout = setTimeout(() => {
+    if ((scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight) <= 30) {
+      userScrolledUp = false;
+    }
+  }, 150);
+});
+
+// === Приём данных из родительского окна (как в club, но с поддержкой новых типов) ===
+window.addEventListener('message', function(event) {
+  let messagesArray = null;
+  let isValidArray = false;
+  const receivedData = event.data;
+  
+  if (Array.isArray(receivedData)) {
+    messagesArray = receivedData;
+    isValidArray = true;
+  } else if (typeof receivedData === 'string') {
+    try {
+      const parsed = JSON.parse(receivedData);
+      if (Array.isArray(parsed)) {
+        messagesArray = parsed;
+        isValidArray = true;
+      } else if (parsed && typeof parsed === 'object') {
+        if (Array.isArray(parsed.messages)) {
+          messagesArray = parsed.messages;
+          isValidArray = true;
+        } else if (Array.isArray(parsed.data)) {
+          messagesArray = parsed.data;
+          isValidArray = true;
+        }
+      }
+    } catch(e) {}
+  } else if (receivedData && typeof receivedData === 'object') {
+    if (Array.isArray(receivedData.messages)) {
+      messagesArray = receivedData.messages;
+      isValidArray = true;
+    } else if (Array.isArray(receivedData.data)) {
+      messagesArray = receivedData.data;
+      isValidArray = true;
+    }
+  }
+  
+  if (isValidArray && messagesArray !== null) {
+    renderMessages(messagesArray);
+    // сигнал родителю, что чат загрузился
+    window.parent.postMessage({ type: 'chat_loaded', status: 'ok' }, '*');
+  }
+});
+
+// === При загрузке страницы ===
+window.addEventListener('DOMContentLoaded', function() {
+  window.parent.postMessage({ type: 'chat_loaded', status: 'ready' }, '*');
+  renderMessages([]);
+});
+
+// === Для тестового режима (можно удалить, но оставлю для демо: при нажатии пробела появляются примеры) ===
+// (полностью соответствует теме, но не мешает основной логике)
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space" && (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && !e.target.isContentEditable)) {
+    e.preventDefault();
+    const demoMessages = [
+      { name: "BaHR", text: "Привет всем! 🔥", icon: "GameIcon4", timestamp: Math.floor(Date.now() / 1000) - 120, type: "message" },
+      { type: "system", event: "join", player: "Kiba" },
+      { type: "system", event: "rankup", player: "Mystic", rankIcon: "https://cdn-icons-png.flaticon.com/512/1828/1828884.png" },
+      { type: "pin", name: "Archmage", icon: "GameIcon7", pinImage: "https://cdn-icons-png.flaticon.com/512/742/742751.png" },
+      { type: "coin_request", name: "LordNiko", icon: "GameIcon3", requestAmount: 80, requestId: Date.now(), text: "Нужны монеты на улучшение" },
+      { type: "system", event: "leave", player: "Grey" },
+      { name: "HelperBot", text: "Красивый пин!", icon: "GameIcon2", timestamp: Math.floor(Date.now() / 1000), type: "message" }
+    ];
+    renderMessages(demoMessages);
+  }
+});
+</script>
+</body>
+</html>

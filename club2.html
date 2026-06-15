@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Club Chat</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+html,body{
+width:100%;
+height:100%;
+background:transparent;
+overflow:hidden;
+font-family:'Rubik',sans-serif;
+}
+
+.chat-container{
+width:100%;
+height:100%;
+display:flex;
+flex-direction:column;
+}
+
+.chat-scrollable{
+flex:1;
+overflow-y:auto;
+display:flex;
+flex-direction:column;
+padding:8px 0 12px 0;
+scroll-behavior:smooth;
+}
+
+.chat-scrollable::-webkit-scrollbar{display:none;}
+
+.row{
+display:flex;
+align-items:flex-start;
+margin:4px 8px;
+width:100%;
+}
+
+.avatar{
+width:34px;height:34px;margin-right:8px;
+}
+
+.avatar img{
+width:100%;height:100%;
+}
+
+.message{
+position:relative;
+background:#1ea7e1;
+border-radius:18px;
+padding:6px 12px 8px;
+flex:1;
+box-shadow:inset 0 -2px rgba(0,0,0,.15);
+}
+
+.message::before{
+content:"";
+position:absolute;
+left:-6px;top:14px;
+width:12px;height:12px;
+background:#1ea7e1;
+transform:rotate(45deg);
+}
+
+.name{font-weight:700;color:#fff;font-size:14px;}
+.text{color:#eaf7ff;font-weight:600;font-size:15px;}
+.time{position:absolute;top:6px;right:10px;font-size:10px;opacity:.6;}
+
+.empty-chat{
+text-align:center;
+padding:20px;
+color:#fff;
+opacity:.6;
+}
+
+/* SYSTEM */
+.system-message{
+width:calc(100% - 16px);
+margin:6px 8px;
+padding:10px;
+border-radius:14px;
+font-weight:700;
+text-align:center;
+color:#fff;
+}
+
+.system-join{background:#2ec9df;}
+.system-leave{background:#3551b8;}
+.system-rankup{background:#6d6a8f;display:flex;justify-content:space-between;align-items:center;}
+
+/* PIN */
+.pin-row{
+display:flex;
+margin:4px 8px;
+}
+
+.pin-box{
+background:#1ea7e1;
+border-radius:18px;
+padding:10px;
+position:relative;
+flex:1;
+}
+
+.pin-box::before{
+content:"";
+position:absolute;
+left:-6px;
+top:14px;
+width:12px;height:12px;
+background:#1ea7e1;
+transform:rotate(45deg);
+}
+
+.pin-img{
+width:90px;
+height:90px;
+object-fit:contain;
+}
+
+</style>
+</head>
+
+<body>
+<div class="chat-container">
+<div class="chat-scrollable" id="chat"></div>
+</div>
+
+<script>
+
+const chat=document.getElementById("chat");
+let userScrolled=false;
+
+/* TIME */
+function timeAgo(ts){
+if(!ts)return"только что";
+const d=Math.floor(Date.now()/1000-ts);
+if(d<60)return"только что";
+if(d<3600)return Math.floor(d/60)+" мин назад";
+if(d<86400)return Math.floor(d/3600)+" ч назад";
+return Math.floor(d/86400)+" д назад";
+}
+
+/* ICON */
+function icon(u){
+return `https://raw.githubusercontent.com/bahrstars/bahrstars.github.io/5c4d2cff072d93b418887ee2dd8376a51482acdc/GameFiles/Images/Icons/${u}.svg`;
+}
+
+/* ADD MESSAGE */
+function addMessage(m){
+
+const row=document.createElement("div");
+row.className="row";
+
+const av=document.createElement("div");
+av.className="avatar";
+av.innerHTML=`<img src="${icon(m.icon||'GameIcon4')}">`;
+
+const box=document.createElement("div");
+box.className="message";
+
+box.innerHTML=`
+<div class="name">${m.name||"Anon"}</div>
+<div class="text">${m.text||""}</div>
+<div class="time">${timeAgo(m.timestamp)}</div>
+`;
+
+row.appendChild(av);
+row.appendChild(box);
+chat.appendChild(row);
+}
+
+/* SYSTEM */
+function addSystem(m){
+
+const div=document.createElement("div");
+
+if(m.event==="join"){
+div.className="system-message system-join";
+div.textContent=`${m.player} вступил в клуб`;
+}
+
+if(m.event==="leave"){
+div.className="system-message system-leave";
+div.textContent=`${m.player} покинул клуб`;
+}
+
+if(m.event==="rankup"){
+div.className="system-message system-rankup";
+div.innerHTML=`
+<span>${m.player} повысил ранг</span>
+<img src="${m.rankIcon||''}" width="36">
+`;
+}
+
+chat.appendChild(div);
+}
+
+/* PIN */
+function addPin(m){
+
+const row=document.createElement("div");
+row.className="pin-row";
+
+const av=document.createElement("div");
+av.className="avatar";
+av.innerHTML=`<img src="${icon(m.icon||'GameIcon4')}">`;
+
+const box=document.createElement("div");
+box.className="pin-box";
+box.innerHTML=`
+<div class="name">${m.name}</div>
+<img class="pin-img" src="${m.pinImage}">
+`;
+
+row.appendChild(av);
+row.appendChild(box);
+chat.appendChild(row);
+}
+
+/* RENDER */
+function render(arr){
+
+chat.innerHTML="";
+
+for(const m of arr){
+
+if(m.type==="system"){addSystem(m);continue;}
+if(m.type==="pin"){addPin(m);continue;}
+addMessage(m);
+
+}
+
+chat.scrollTop=chat.scrollHeight;
+}
+
+/* SCROLL */
+chat.addEventListener("scroll",()=>{
+userScrolled=(chat.scrollTop+chat.clientHeight<chat.scrollHeight-50);
+});
+
+/* MESSAGE FROM IFRAME */
+window.addEventListener("message",e=>{
+if(!Array.isArray(e.data))return;
+render(e.data);
+});
+
+/* TEST SPACE */
+document.addEventListener("keydown",e=>{
+if(e.code!=="Space")return;
+
+render([
+{type:"system",event:"join",player:"BaHR"},
+{type:"message",name:"BaHR",text:"Тест сообщение",icon:"GameIcon4",timestamp:Math.floor(Date.now()/1000)},
+{type:"system",event:"rankup",player:"BaHR",rankIcon:"https://cdn-icons-png.flaticon.com/512/1828/1828884.png"},
+{type:"pin",name:"BaHR",icon:"GameIcon4",pinImage:"https://cdn-icons-png.flaticon.com/512/742/742751.png"}
+]);
+
+});
+
+</script>
+</body>
+</html>

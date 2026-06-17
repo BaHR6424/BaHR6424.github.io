@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симулятор открытия наград</title>
+    <style>
+        :root {
+            --bg: #0f0f1a;
+            --card-bg: #1a1a2e;
+            --card-border: #2a2a45;
+            --accent: #8b5cf6;
+            --accent-glow: #a78bfa;
+            --gold: #f59e0b;
+            --gold-glow: #fbbf24;
+            --crystal: #38bdf8;
+            --crystal-glow: #7dd3fc;
+            --text: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --success: #10b981;
+            --input-bg: #0f0f1a;
+            --input-border: #334155;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            background-image:
+                radial-gradient(ellipse at 20% 10%, rgba(139, 92, 246, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(56, 189, 248, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 50%, rgba(245, 158, 11, 0.04) 0%, transparent 70%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            padding: 10px 0 40px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 10px 0;
+        }
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--accent-glow), var(--crystal-glow), var(--gold-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 4px;
+        }
+        .header .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.02em;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        .card:hover {
+            border-color: #3a3a5c;
+        }
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text);
+        }
+        .card-title .icon {
+            font-size: 1.3rem;
+        }
+
+        /* Add reward form */
+        .add-reward-form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 110px;
+        }
+        .form-group label {
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .form-group input {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            transition: var(--transition);
+            width: 100%;
+            font-family: inherit;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+        }
+        .form-group input::placeholder {
+            color: #4a5568;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+            transition: all var(--transition);
+            font-family: inherit;
+            letter-spacing: 0.01em;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-add {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+            align-self: flex-end;
+            height: 44px;
+        }
+        .btn-add:hover {
+            background: #7c3aed;
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+            transform: translateY(-1px);
+        }
+        .btn-add:active {
+            transform: scale(0.97);
+        }
+        .btn-danger {
+            background: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 8px;
+        }
+        .btn-danger:hover {
+            background: var(--danger);
+            color: #fff;
+        }
+        .btn-simulate {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #1a1a2e;
+            font-size: 1rem;
+            padding: 12px 32px;
+            font-weight: 700;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
+            letter-spacing: 0.03em;
+        }
+        .btn-simulate:hover {
+            box-shadow: 0 8px 30px rgba(245, 158, 11, 0.6);
+            transform: translateY(-2px);
+        }
+        .btn-simulate:active {
+            transform: scale(0.96);
+        }
+        .btn-reset {
+            background: transparent;
+            border: 1px solid var(--input-border);
+            color: var(--text-secondary);
+        }
+        .btn-reset:hover {
+            border-color: #64748b;
+            color: #fff;
+        }
+        .btn-preset {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text);
+            padding: 8px 14px;
+            font-size: 0.82rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all var(--transition);
+            font-family: inherit;
+        }
+        .btn-preset:hover {
+            border-color: var(--accent);
+            background: #1e1e38;
+        }
+        .btn-preset.active {
+            border-color: var(--accent);
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-glow);
+            box-shadow: 0 0 12px rgba(139, 92, 246, 0.2);
+        }
+
+        /* Reward list */
+        .reward-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 350px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .reward-list::-webkit-scrollbar {
+            width: 5px;
+        }
+        .reward-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .reward-list::-webkit-scrollbar-thumb {
+            background: #2a2a45;
+            border-radius: 10px;
+        }
+        .reward-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+            flex-wrap: wrap;
+        }
+        .reward-item:hover {
+            border-color: #3a3a5c;
+        }
+        .reward-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+            font-weight: bold;
+        }
+        .reward-icon.crystal {
+            background: rgba(56, 189, 248, 0.2);
+            color: var(--crystal-glow);
+        }
+        .reward-icon.gold {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--gold-glow);
+        }
+        .reward-icon.power {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+        .reward-icon.default-icon {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-glow);
+        }
+        .reward-info {
+            flex: 1;
+            min-width: 120px;
+        }
+        .reward-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text);
+        }
+        .reward-details {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+        .reward-chance-bar {
+            flex: 0 0 100px;
+            height: 8px;
+            background: #1e1e38;
+            border-radius: 10px;
+            overflow: hidden;
+            min-width: 60px;
+        }
+        .reward-chance-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.4s ease;
+        }
+        .chance-text {
+            font-weight: 700;
+            font-size: 0.85rem;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        /* Simulation controls */
+        .sim-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .sim-count-input {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            width: 120px;
+            text-align: center;
+            font-family: inherit;
+            font-weight: 600;
+        }
+        .sim-count-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+        }
+        .preset-buttons {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        /* Results */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .result-card {
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            text-align: center;
+            transition: var(--transition);
+        }
+        .result-card:hover {
+            border-color: #4a4a6a;
+        }
+        .result-icon {
+            font-size: 2rem;
+            margin-bottom: 6px;
+        }
+        .result-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+        .result-count {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .result-percent {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .no-results {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 30px;
+            font-style: italic;
+        }
+
+        /* Warning */
+        .warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            color: var(--gold-glow);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .warning.hidden {
+            display: none;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            .add-reward-form {
+                flex-direction: column;
+            }
+            .btn-add {
+                width: 100%;
+                justify-content: center;
+            }
+            .reward-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .reward-chance-bar {
+                flex: 0 0 auto;
+                width: 100%;
+            }
+            .card {
+                padding: 16px;
+            }
+            .header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎁 Симулятор наград</h1>
+            <p class="subtitle">Добавьте награды, задайте шансы и запустите симуляцию</p>
+        </div>
+
+        <!-- Add Reward Card -->
+        <div class="card">
+            <div class="card-title"><span class="icon">➕</span> Добавить награду</div>
+            <div class="add-reward-form" id="addRewardForm">
+                <div class="form-group">
+                    <label>Название</label>
+                    <input type="text" id="rewardName" placeholder="Кристаллы" maxlength="30">
+                </div>
+                <div class="form-group">
+                    <label>Кол-во за раз</label>
+                    <input type="number" id="rewardAmount" placeholder="10" min="1" value="10">
+                </div>
+                <div class="form-group">
+                    <label>Шанс (%)</label>
+                    <input type="number" id="rewardChance" placeholder="25" min="0.01" max="100" step="0.01" value="25">
+                </div>
+                <button class="btn btn-add" id="btnAddReward">➕ Добавить</button>
+            </div>
+            <div class="warning hidden" id="chanceWarning">
+                ⚠️ Сумма шансов всех наград должна равняться 100%. Сейчас: <strong id="totalChanceDisplay">0</strong>%
+            </div>
+        </div>
+
+        <!-- Reward List Card -->
+        <div class="card">
+            <div class="card-title"><span class="icon">📋</span> Список наград <span style="font-weight:400;color:var(--text-secondary);font-size:0.85rem;" id="rewardCountLabel">(0 наград)</span></div>
+            <div class="reward-list" id="rewardList">
+                <div class="empty-state">Нет добавленных наград. Добавьте хотя бы одну награду выше 👆</div>
+            </div>
+        </div>
+
+        <!-- Simulation Card -->
+        <div class="card">
+            <div class="card-title"><span class="icon">🎲</span> Симуляция открытий</div>
+            <div class="sim-controls">
+                <span style="color:var(--text-secondary);font-size:0.85rem;">Количество симуляций:</span>
+                <input type="number" class="sim-count-input" id="simCount" value="100" min="1" max="1000000">
+                <div class="preset-buttons">
+                    <button class="btn-preset" data-count="100">100</button>
+                    <button class="btn-preset active" data-count="200">200</button>
+                    <button class="btn-preset" data-count="500">500</button>
+                    <button class="btn-preset" data-count="1000">1000</button>
+                    <button class="btn-preset" data-count="5000">5000</button>
+                    <button class="btn-preset" data-count="10000">10K</button>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
+                <button class="btn btn-simulate" id="btnSimulate">🎰 Запустить симуляцию</button>
+                <button class="btn btn-reset" id="btnResetResults">🗑 Сбросить результаты</button>
+            </div>
+        </div>
+
+        <!-- Results Card -->
+        <div class="card" id="resultsCard">
+            <div class="card-title"><span class="icon">📊</span> Результаты симуляции</div>
+            <div class="results-grid" id="resultsGrid">
+                <div class="no-results">Запустите симуляцию, чтобы увидеть результаты</div>
+            </div>
+            <div id="totalSummary" style="margin-top:12px;text-align:center;color:var(--text-secondary);font-size:0.85rem;"></div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // --- State ---
+            let rewards = [];
+            let simulationResults = null;
+            let totalSimulations = 0;
+
+            // --- DOM refs ---
+            const rewardNameInput = document.getElementById('rewardName');
+            const rewardAmountInput = document.getElementById('rewardAmount');
+            const rewardChanceInput = document.getElementById('rewardChance');
+            const btnAddReward = document.getElementById('btnAddReward');
+            const rewardListEl = document.getElementById('rewardList');
+            const rewardCountLabel = document.getElementById('rewardCountLabel');
+            const chanceWarning = document.getElementById('chanceWarning');
+            const totalChanceDisplay = document.getElementById('totalChanceDisplay');
+            const simCountInput = document.getElementById('simCount');
+            const btnSimulate = document.getElementById('btnSimulate');
+            const btnResetResults = document.getElementById('btnResetResults');
+            const resultsGrid = document.getElementById('resultsGrid');
+            const totalSummary = document.getElementById('totalSummary');
+            const presetButtons = document.querySelectorAll('.btn-preset');
+
+            // --- Icons mapping ---
+            function getRewardIconClass(name) {
+                const lower = name.toLowerCase();
+                if (lower.includes('кристалл') || lower.includes('crystal') || lower.includes('алмаз') || lower
+                    .includes('diamond')) return 'crystal';
+                if (lower.includes('монет') || lower.includes('coin') || lower.includes('золот') || lower.includes('gold'))
+                    return 'gold';
+                if (lower.includes('сил') || lower.includes('power') || lower.includes('очк') || lower.includes('point'))
+                    return 'power';
+                return 'default-icon';
+            }
+
+            function getRewardEmoji(name) {
+                const lower = name.toLowerCase();
+                if (lower.includes('кристалл') || lower.includes('crystal') || lower.includes('алмаз') || lower
+                    .includes('diamond')) return '💎';
+                if (lower.includes('монет') || lower.includes('coin') || lower.includes('золот') || lower.includes('gold'))
+                    return '🪙';
+                if (lower.includes('сил') || lower.includes('power') || lower.includes('очк') || lower.includes('point'))
+                    return '⚡';
+                return '🎁';
+            }
+
+            // --- Render ---
+            function renderRewards() {
+                rewardListEl.innerHTML = '';
+                if (rewards.length === 0) {
+                    rewardListEl.innerHTML = '<div class="empty-state">Нет добавленных наград. Добавьте хотя бы одну награду выше 👆</div>';
+                } else {
+                    rewards.forEach((reward, index) => {
+                        const iconClass = getRewardIconClass(reward.name);
+                        const emoji = getRewardEmoji(reward.name);
+                        const barColor = iconClass === 'crystal' ? 'linear-gradient(90deg, #38bdf8, #7dd3fc)' :
+                            iconClass === 'gold' ? 'linear-gradient(90deg, #f59e0b, #fbbf24)' :
+                            iconClass === 'power' ? 'linear-gradient(90deg, #ef4444, #f87171)' :
+                            'linear-gradient(90deg, #8b5cf6, #a78bfa)';
+
+                        const item = document.createElement('div');
+                        item.className = 'reward-item';
+                        item.innerHTML = `
+                                    <div class="reward-icon ${iconClass}">${emoji}</div>
+                                    <div class="reward-info">
+                                        <div class="reward-name">${escapeHtml(reward.name)}</div>
+                                        <div class="reward-details">×${reward.amount} за открытие</div>
+                                    </div>
+                                    <div class="reward-chance-bar">
+                                        <div class="reward-chance-fill" style="width:${reward.chance}%;background:${barColor};"></div>
+                                    </div>
+                                    <span class="chance-text" style="color:${iconClass === 'crystal' ? 'var(--crystal-glow)' : iconClass === 'gold' ? 'var(--gold-glow)' : iconClass === 'power' ? '#f87171' : 'var(--accent-glow)'}">${reward.chance.toFixed(2)}%</span>
+                                    <button class="btn btn-danger btn-delete" data-index="${index}" title="Удалить награду">✕</button>
+                                `;
+                        rewardListEl.appendChild(item);
+                    });
+
+                    // Attach delete handlers
+                    document.querySelectorAll('.btn-delete').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const index = parseInt(this.getAttribute('data-index'));
+                            deleteReward(index);
+                        });
+                    });
+                }
+                rewardCountLabel.textContent = `(${rewards.length} наград${getRewardWordEnding(rewards.length)})`;
+                updateChanceWarning();
+            }
+
+            function getRewardWordEnding(n) {
+                if (n % 10 === 1 && n % 100 !== 11) return 'а';
+                if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'ы';
+                return '';
+            }
+
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            function updateChanceWarning() {
+                const total = rewards.reduce((sum, r) => sum + r.chance, 0);
+                totalChanceDisplay.textContent = total.toFixed(2);
+                if (rewards.length > 0 && Math.abs(total - 100) > 0.001) {
+                    chanceWarning.classList.remove('hidden');
+                } else {
+                    chanceWarning.classList.add('hidden');
+                }
+            }
+
+            function renderResults() {
+                if (!simulationResults || totalSimulations === 0) {
+                    resultsGrid.innerHTML =
+                    '<div class="no-results">Запустите симуляцию, чтобы увидеть результаты</div>';
+                    totalSummary.textContent = '';
+                    return;
+                }
+
+                resultsGrid.innerHTML = '';
+                let totalItems = 0;
+                simulationResults.forEach((result) => {
+                    totalItems += result.totalAmount;
+                    const emoji = getRewardEmoji(result.name);
+                    const percent = totalSimulations > 0 ? ((result.count / totalSimulations) * 100).toFixed(
+                        2) : '0.00';
+                    const card = document.createElement('div');
+                    card.className = 'result-card';
+                    card.innerHTML = `
+                                <div class="result-icon">${emoji}</div>
+                                <div class="result-name">${escapeHtml(result.name)}</div>
+                                <div class="result-count">${result.totalAmount.toLocaleString('ru-RU')}</div>
+                                <div class="result-percent">Выпало ${result.count.toLocaleString('ru-RU')} раз (${percent}%)</div>
+                            `;
+                    resultsGrid.appendChild(card);
+                });
+                totalSummary.textContent =
+                    `Всего проведено открытий: ${totalSimulations.toLocaleString('ru-RU')} | Суммарно получено предметов: ${totalItems.toLocaleString('ru-RU')}`;
+            }
+
+            // --- Actions ---
+            function addReward() {
+                const name = rewardNameInput.value.trim();
+                const amount = parseInt(rewardAmountInput.value);
+                const chance = parseFloat(rewardChanceInput.value);
+
+                if (!name) {
+                    alert('Пожалуйста, введите название награды.');
+                    rewardNameInput.focus();
+                    return;
+                }
+                if (isNaN(amount) || amount < 1) {
+                    alert('Количество за раз должно быть положительным числом (минимум 1).');
+                    rewardAmountInput.focus();
+                    return;
+                }
+                if (isNaN(chance) || chance <= 0 || chance > 100) {
+                    alert('Шанс должен быть от 0.01% до 100%.');
+                    rewardChanceInput.focus();
+                    return;
+                }
+
+                // Check total chance
+                const currentTotal = rewards.reduce((sum, r) => sum + r.chance, 0);
+                if (currentTotal + chance > 100.0001) {
+                    alert(
+                        `Сумма шансов превышает 100%! Текущая сумма: ${currentTotal.toFixed(2)}%. Вы пытаетесь добавить ${chance.toFixed(2)}%. Итого будет: ${(currentTotal + chance).toFixed(2)}%. Пожалуйста, уменьшите шанс.`);
+                    return;
+                }
+
+                rewards.push({
+                    name: name,
+                    amount: amount,
+                    chance: chance,
+                });
+
+                // Clear inputs
+                rewardNameInput.value = '';
+                rewardAmountInput.value = '10';
+                rewardChanceInput.value = '25';
+                rewardNameInput.focus();
+
+                // Clear old simulation results since rewards changed
+                simulationResults = null;
+                totalSimulations = 0;
+
+                renderRewards();
+                renderResults();
+            }
+
+            function deleteReward(index) {
+                if (index >= 0 && index < rewards.length) {
+                    rewards.splice(index, 1);
+                    simulationResults = null;
+                    totalSimulations = 0;
+                    renderRewards();
+                    renderResults();
+                }
+            }
+
+            function simulate() {
+                if (rewards.length === 0) {
+                    alert('Добавьте хотя бы одну награду перед симуляцией!');
+                    return;
+                }
+                const totalChance = rewards.reduce((sum, r) => sum + r.chance, 0);
+                if (Math.abs(totalChance - 100) > 0.001) {
+                    alert(
+                        `Сумма шансов должна равняться 100%! Сейчас: ${totalChance.toFixed(2)}%. Пожалуйста, скорректируйте шансы наград.`);
+                    return;
+                }
+
+                const count = parseInt(simCountInput.value);
+                if (isNaN(count) || count < 1) {
+                    alert('Введите корректное количество симуляций (минимум 1).');
+                    simCountInput.focus();
+                    return;
+                }
+                if (count > 1000000) {
+                    alert('Максимальное количество симуляций — 1 000 000.');
+                    return;
+                }
+
+                // Build cumulative distribution
+                const cumulative = [];
+                let cumSum = 0;
+                for (const reward of rewards) {
+                    cumSum += reward.chance;
+                    cumulative.push({ reward, threshold: cumSum });
+                }
+
+                // Initialize counters
+                const counters = {};
+                rewards.forEach(r => { counters[r.name] = { count: 0, totalAmount: 0, amount: r.amount }; });
+
+                // Run simulation
+                for (let i = 0; i < count; i++) {
+                    const rand = Math.random() * 100; // 0 to 100
+                    let selected = null;
+                    for (const entry of cumulative) {
+                        if (rand <= entry.threshold) {
+                            selected = entry.reward;
+                            break;
+                        }
+                    }
+                    // Fallback (due to floating point)
+                    if (!selected) selected = rewards[rewards.length - 1];
+
+                    counters[selected.name].count++;
+                    counters[selected.name].totalAmount += selected.amount;
+                }
+
+                // Prepare results
+                simulationResults = rewards.map(r => ({
+                    name: r.name,
+                    count: counters[r.name].count,
+                    totalAmount: counters[r.name].totalAmount,
+                }));
+                totalSimulations = count;
+
+                renderResults();
+
+                // Scroll to results
+                document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            function resetResults() {
+                simulationResults = null;
+                totalSimulations = 0;
+                renderResults();
+            }
+
+            // --- Preset buttons ---
+            function updatePresetButtons() {
+                const currentVal = simCountInput.value;
+                presetButtons.forEach(btn => {
+                    const btnCount = btn.getAttribute('data-count');
+                    if (btnCount === currentVal) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+
+            presetButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const count = this.getAttribute('data-count');
+                    simCountInput.value = count;
+                    updatePresetButtons();
+                });
+            });
+
+            simCountInput.addEventListener('input', updatePresetButtons);
+            simCountInput.addEventListener('change', updatePresetButtons);
+
+            // --- Event listeners ---
+            btnAddReward.addEventListener('click', addReward);
+            rewardNameInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addReward();
+                }
+            });
+            rewardAmountInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addReward();
+                }
+            });
+            rewardChanceInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addReward();
+                }
+            });
+            btnSimulate.addEventListener('click', simulate);
+            btnResetResults.addEventListener('click', resetResults);
+
+            // --- Initial demo data ---
+            function loadDemoData() {
+                rewards = [
+                    { name: 'Кристаллы', amount: 10, chance: 30 },
+                    { name: 'Монеты', amount: 50, chance: 40 },
+                    { name: 'Очки силы', amount: 5, chance: 20 },
+                    { name: 'Свиток опыта', amount: 1, chance: 10 },
+                ];
+                renderRewards();
+                renderResults();
+                simCountInput.value = '200';
+                updatePresetButtons();
+            }
+
+            // --- Initialize ---
+            loadDemoData();
+            updatePresetButtons();
+            rewardNameInput.focus();
+        })();
+    </script>
+</body>
+</html>
